@@ -3,6 +3,9 @@
 
 *Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
 
+The IODS course is to learn how to use R, RStudio, R Markdown, and GitHub  to apply certain statistical methods of data science. 
+The link to my Github repository: https://github.com/yingjchen/IODS-project.
+
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
 
