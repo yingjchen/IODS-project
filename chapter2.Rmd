@@ -1,4 +1,5 @@
-# Insert chapter 2 title here
+# chapter 2: Regression and model validation
+
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -11,3 +12,72 @@ date()
 ```
 
 Here we go again...
+
+## Load the students2014 data
+
+```{r}
+df = read.csv('./data/learning2014.txt', sep = ',', stringsAsFactors = F, header = T)
+dim(df)
+```
+```{r}
+head(df)
+```
+
+```{r}
+str(df)
+```
+
+The students2014 data contains 166 observations and 7 variables (gender, age, attitude, deep, stra, surf, points).
+
+## A graphical overview of the data
+
+```{r}
+par(mfrow = c(2,4))
+barplot(table(df$gender), main = 'gender')
+hist(df$age)
+hist(df$attitude)
+hist(df$deep)
+hist(df$stra)
+hist(df$surf)
+hist(df$points)
+```
+```{r}
+pairs(df[, -1])
+```
+
+
+##  Fit a regression model 
+```{r}
+lm.1 <- lm(points~attitude+deep+stra, data = df)
+summary(lm.1)
+```
+
+remove the two variables (surf and stra) which did not have a statistically significant relationship with the target variable (exam points) and fit the regression model with the remaining variables
+
+```{r}
+lm.2 <- lm(points~attitude, data = df)
+summary(lm.2)
+```
+
+## Explanations on the fitted model
+R-squareds tell how large proportion of the variance in Y the line explains compared to the total variance in Y .
+```{r}
+summary(lm.2)$r.squared
+```
+In this case, the linear model on attitude explains around 20% of the variation in exam points and therefore leaves about 80% of variation in exam points as something that cannot be explained by (a linear effect of) attitude only. 
+
+
+## Produce the following diagnostic plots
+
+### Residuals vs Fitted values, Normal QQ-plot and Residuals vs Leverage
+```{r}
+par(mfrow = c(2,2)) 
+plot(lm.2)
+```
+
+1. Residuals vs. fitted should not show a pattern where the distribution of residuals varies depending on the fitted values. Thus, is is good if the red line showing the mean of data points is close to a horizontal line.
+
+2. QQ-plot should ideally be on the diagonal line, in which case the residuals are Normally distributed and SEs and P-values of the model coefficients are reliable. In this case, the QQ-plot deviated from the diagonal line.
+
+3. Residuals vs. leverage should not show points that reach outside the curved areas of Cook’s distance 1. Otherwise, such points would have a high influence on the slope of the linear model, and hence the lm() estimates from such data would not be reliable.
+
