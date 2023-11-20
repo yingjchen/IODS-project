@@ -1,0 +1,129 @@
+---
+title: "Chapter 3: Logistic regression"
+author: Yingjia
+date: "2023-11-20"
+---
+
+# chapter 3: Logistic regression
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+date()
+```
+
+## Read data into R
+
+```{r}
+alc <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv", sep=",", header=TRUE)
+dim(alc)
+colnames(alc)
+```
+
+The alc data presents student achievement in secondary education of two Portuguese schools, containing 370 students and 35 variables.
+
+
+## Choose 4 interesting variables 
+
+Choose 4 interesting variables in the data and for each of them, present your personal hypothesis about their relationships with alcohol consumption:
+
+I am interested in exploring the relationships between high/low alcohol consumption and 4 variables ('age', 'Pstatus', 'studytime', 'goout').
+
+I hypothesize that there may be a positive correlation between age and going out with the likelihood of alcohol consumption, while study time is expected to be negatively correlated with alcohol consumption. If parents are apart, students tend to be alcoholic. 
+
+Note: age - student's age (numeric: from 15 to 22)
+Pstatus - parent's cohabitation status (binary: 'T' - living together or 'A' - apart)
+studytime - weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours)
+goout - going out with friends (numeric: from 1 - very low to 5 - very high)
+
+
+## Numerically and graphically explorations
+
+Numerically and graphically explore the distributions of your chosen variables and their relationships with alcohol consumption (use for example cross-tabulations, bar plots and box plots).
+
+```{r}
+par(mfrow = c(2,2))
+hist(alc$age, main = 'age')
+barplot(table(alc$Pstatus), main = 'Pstatus')
+barplot(table(alc$studytime), main = 'studytime')
+barplot(table(alc$goout), main = 'goout')
+```
+
+Most student are 15-18 years old.
+Most parents are living together.
+
+```{r}
+library(ggplot2)
+#alc$studytime = as.factor(alc$studytime)
+#alc$goout = as.factor(alc$goout)
+#alc$age = as.factor(alc$age)
+alc$high_use = as.factor(alc$high_use)
+g1 <- ggplot(alc, aes(x = Pstatus, y = alc_use))
+g1 + geom_boxplot() + 
+   geom_jitter(aes(color=high_use), size=0.4, alpha=0.9) + 
+  ylab("alcohol assumption") + theme_classic()
+```
+```{r}
+g2 <- ggplot(alc, aes(x = high_use, y = studytime))
+g2 + geom_boxplot() +geom_jitter(color="black", size=0.4, alpha=0.9) + ylab("studytime") +theme_classic()
+
+```
+```{r}
+
+g3 <- ggplot(alc, aes(x = high_use, y = goout))
+g3 + geom_boxplot() +geom_jitter(color="black", size=0.4, alpha=0.9) + ylab("goout") + theme_classic()
+```
+
+```{r}
+g4 <- ggplot(alc, aes(x = high_use, y = age))
+g4 + geom_boxplot() +geom_jitter(color="black", size=0.4, alpha=0.9) + ylab("age") +theme_classic()
+```
+```{r}
+#install.packages('crosstable')
+#library(crosstable)
+#crosstable(alc, c(age, studytime), by=high_use) 
+```
+
+
+##  Logistic regression
+```{r}
+glm.1 <- glm(high_use ~ age + studytime + Pstatus + goout, data = alc, family = "binomial")
+summary(glm.1)
+```
+```{r}
+#remove variables with p-values larger than 0.05, and fit the LR model again
+glm.2 <- glm(high_use ~ studytime + goout, data = alc, family = "binomial")
+summary(glm.2)
+```
+
+
+
+```{r}
+pred.2 = predict(glm.2, newdata = alc[, c( 'studytime' ,'goout')], type = 'response')
+pred.2.label = ifelse(pred.2 >= 0.5, TRUE, FALSE)
+table(pred.2.label)
+
+```
+### 2x2 cross tabulation of predictions versus the actual values
+
+```{r}
+table( truelabels = alc$high_use, predictions = pred.2.label)
+```
+```{r}
+mosaicplot(table( truelabels = alc$high_use, predictions = pred.2.label))
+
+```
+
+
+## Compute the inaccuracy
+
+Compute the total proportion of inaccurately classified individuals (= the training error) and comment on all the results. 
+
+```{r}
+inaccuracy = (21+70)/nrow(alc)
+inaccuracy
+```
+Compared with the performance of the model with performance achieved by some simple guessing strategy (inaccuracy = 0.5), the logistic regression showed better performance.
+
+
