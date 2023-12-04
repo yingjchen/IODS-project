@@ -1,0 +1,97 @@
+---
+title: "chapter5"
+author: Yingjia
+date: "2023-12-04"
+---
+
+
+
+# chapter 5: Dimensionality reduction techniques
+
+
+```{r}
+date()
+```
+
+## load data
+
+```{r}
+library(readr)
+human <- read_csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/human2.csv")
+dim(human)
+```
+
+
+## move the country names to rownames
+
+```{r}
+
+library(tibble)
+human_ <- column_to_rownames(human, "Country")
+summary(human_)
+```
+
+```{r}
+#graphical overview of the data 
+library(ggplot2)
+library(GGally)
+ggpairs(human_, progress = FALSE)
+```
+There is higher positive correlations between Ado.Birth and Mat.Mor, Edu.Exp and Edu2.FM. 
+
+There is higher negative correlations between Life.Exp and Mat.Mor, Edu.Exp and Mat.Mor, Edu2.FM and Mat.Mor, Ado.Birth and Life.Exp, Ado.Birth and Edu.Exp.
+
+
+## PCA
+
+```{r}
+pca_human <- prcomp(human_)
+biplot(pca_human, choices = 1:2, xlabs=rep(".", nrow(human_)))
+```
+
+## Standardize the variables and PCA
+
+```{r}
+human_scale <- scale(human_)
+pca_human_scale <- prcomp(human_scale)
+biplot(pca_human_scale, choices = 1:2, xlabs=rep(".", nrow(human_scale)))
+```
+```{r}
+s <- summary(pca_human)
+pca_pr <- round(1*s$importance[2, ], digits = 5)
+pca_pr
+
+```
+
+
+```{r}
+s_scale <- summary(pca_human_scale)
+pca_pr_scale <- round(1*s_scale$importance[2, ], digits = 5)
+pca_pr_scale
+```
+
+## tea data
+```{r}
+tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+#View(tea)
+head(tea)
+#dim(tea)
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+tea_time <- select(tea, keep_columns)
+pivot_longer(tea_time, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free")
+```
+```{r}
+#MCA
+#install.packages('FactoMineR')
+library(FactoMineR)
+mca <- MCA(tea_time, graph = FALSE)
+plot(mca, invisible=c("ind"), graph.type = "classic")
+
+```
+
