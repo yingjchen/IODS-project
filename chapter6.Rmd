@@ -1,0 +1,132 @@
+---
+title: "chapter6"
+author: Yingjia
+date: "2023-12-08"
+---
+
+
+
+
+```{r}
+date()
+```
+
+
+# chapter 6: Analysis of longitudinal data
+
+## BPRS data set 
+
+```{r}
+#BPRS (long form)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+BPRS <- read.table('https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt', header = T)
+
+BPRSL <- read.csv('./data/BPRSL.txt', header = T, sep = '\t', stringsAsFactors = F)
+# Draw the plot
+BPRSL$treatment <- factor(BPRSL$treatment)
+BPRSL$subject <- factor(BPRSL$subject)
+
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(BPRSL$bprs), max(BPRSL$bprs)))
+```
+
+```{r}
+BPRSL <- BPRSL %>%
+  group_by(week) %>%
+  mutate(stdbprs = scale(bprs)) %>%
+  ungroup()
+
+# Plot again with the standardised bprs
+ggplot(BPRSL, aes(x = week, y = stdbprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  scale_y_continuous(name = "standardized bprs")
+```
+
+```{r}
+BPRSL8S <- BPRSL %>%
+  filter(week > 0) %>%
+  group_by(treatment, subject) %>%
+  summarise( mean=mean(bprs) ) %>%
+  ungroup()
+
+# Draw a boxplot of the mean versus treatment
+library(ggplot2)
+ggplot(BPRSL8S, aes(x = treatment, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(bprs), weeks 1-8")
+```
+
+```{r}
+BPRSL8S1 <- BPRSL8S %>%
+  filter(mean < 60)
+t.test(mean ~ treatment, data = BPRSL8S1, var.equal = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+# Add the baseline from the original data as a new variable to the summary data
+BPRSL8S2 <- BPRSL8S %>%
+  mutate(baseline = BPRS$week0)
+
+# Fit the linear model with the mean as the response 
+fit <- lm(mean~baseline + treatment,  data = BPRSL8S2)
+
+summary(fit)
+```
+
+
+## RATS data set
+```{r}
+RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", header = TRUE, sep = '\t')
+RATS$ID <- factor(RATS$ID)
+RATS$Group <- factor(RATS$Group)
+RATSL <- pivot_longer(RATS, cols=-c(ID,Group), names_to = "WD",values_to = "Weight")  %>%  mutate(Time = as.integer(substr(WD,3,4))) %>% arrange(Time)
+
+
+# Plot the RATSL data
+library(ggplot2)
+ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line()
+
+```
+
+```{r}
+# access library lme4
+library(lme4)
+
+# Create a random intercept model
+RATS_ref <- lmer(Weight ~ Time + Group + (1 | ID), data = RATSL, REML = FALSE)
+summary(RATS_ref)
+```
+
+
+```{r}
+RATS_ref1 <- lmer(Weight ~ Time + Group + (Time | ID), data = RATSL, REML = FALSE)
+
+summary(RATS_ref1)
+```
+
+
+```{r}
+# perform an ANOVA test on the two models
+anova(RATS_ref1, RATS_ref)
+```
+
+```{r}
+ggplot(RATSL, aes(x = Time, y = Weight, group = ID)) +
+  geom_line(aes(linetype = Group)) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 20)) +
+  scale_y_continuous(name = "Observed weight (grams)") +
+  theme(legend.position = "top")
+```
+
